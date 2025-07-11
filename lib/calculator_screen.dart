@@ -1,73 +1,204 @@
 import 'package:flutter/material.dart';
-import 'package:math_expressions/math_expressions.dart';
 
 class CalculatorPage extends StatefulWidget {
+  const CalculatorPage({super.key});
+
   @override
-  _CalculatorPageState createState() => _CalculatorPageState();
+  State<CalculatorPage> createState() => _CalculatorPageState();
 }
 
 class _CalculatorPageState extends State<CalculatorPage> {
-  TextEditingController expressionController = TextEditingController();
+  String input = '';
+  String expression = '';
   String result = '';
+  String operator = '';
+  bool isResultShown = false;
+
+  TextEditingController expressionController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    expressionController.text = '';
+    expressionController.addListener(() {
+      if (isResultShown) {
+        expression = expressionController.text;
+        recalculateFromExpression(expression);
+      } else {
+        expression = expressionController.text;
+      }
+    });
+  }
+
+  void recalculateFromExpression(String expr) {
+    try {
+      String exp = expr.replaceAll(' ', '');
+      String op = '';
+      for (var o in ['+', '-', '*', '/']) {
+        if (exp.contains(o)) {
+          op = o;
+          break;
+        }
+      }
+      if (op.isEmpty) return;
+      var parts = exp.split(op);
+      if (parts.length < 2) return;
+
+      double num1 = double.tryParse(parts[0]) ?? 0;
+      double num2 = double.tryParse(parts[1]) ?? 0;
+
+      double res = calculate(num1, num2, op);
+      setState(() {
+        operator = op;
+        result = res.toString();
+        expression = expr;
+      });
+    } catch (e) {
+      // ignore invalid input
+    }
+  }
+
+  /// New helper: insert text at current cursor
+  void insertAtCursor(String value) {
+    final text = expressionController.text;
+    final selection = expressionController.selection;
+    final cursorPos = selection.start >= 0 ? selection.start : text.length;
+
+    final newText = text.replaceRange(cursorPos, cursorPos, value);
+
+    expressionController.text = newText;
+    expressionController.selection = TextSelection.fromPosition(
+      TextPosition(offset: cursorPos + value.length),
+    );
+  }
 
   void onButtonClick(String value) {
     setState(() {
       if (value == 'AC') {
-        expressionController.text = '';
+        expression = '';
         result = '';
-      } else if (value == '=') {
-        try {
-          Parser p = Parser();
-          Expression exp = p.parse(expressionController.text);
-          double eval = exp.evaluate(EvaluationType.REAL, ContextModel());
-          result = eval.toString();
-        } catch (e) {
-          result = 'Error';
+        operator = '';
+        isResultShown = false;
+        expressionController.text = '';
+      } else if (value == '+' || value == '-' || value == '*' || value == '/') {
+        String exp = expressionController.text.replaceAll(' ', '');
+        String opInExp = '';
+        int opIndex = -1;
+
+        for (var o in ['+', '-', '*', '/']) {
+          opIndex = exp.indexOf(o);
+          if (opIndex != -1) {
+            opInExp = o;
+            break;
+          }
         }
+
+        if (opInExp.isNotEmpty && opIndex != -1) {
+          var parts = exp.split(opInExp);
+          if (parts.length == 2) {
+            // Replace operator only if caret is next to operator
+            final cursorPos = expressionController.selection.start;
+            if (cursorPos == opIndex + 1) {
+              final beforeOp = parts[0];
+              final afterOp = parts[1];
+              final newText = beforeOp + value + afterOp;
+              expressionController.text = newText;
+              expressionController.selection = TextSelection.collapsed(offset: opIndex + 1);
+              operator = value;
+            } else {
+              // Else: insert at cursor
+              insertAtCursor(value);
+              operator = value;
+            }
+          } else {
+            insertAtCursor(value);
+            operator = value;
+          }
+        } else {
+          insertAtCursor(value);
+          operator = value;
+        }
+
+        if (isResultShown) {
+          recalculateFromExpression(expressionController.text);
+        }
+      } else if (value == '=') {
+        recalculateFromExpression(expressionController.text);
+        isResultShown = true;
       } else {
-        expressionController.text += value;
-        expressionController.selection = TextSelection.fromPosition(
-          TextPosition(offset: expressionController.text.length),
-        );
+        insertAtCursor(value);
       }
     });
+  }
+
+  double calculate(double a, double b, String op) {
+    switch (op) {
+      case '+':
+        return a + b;
+      case '-':
+        return a - b;
+      case '*':
+        return a * b;
+      case '/':
+        return b != 0 ? a / b : double.nan;
+      default:
+        return 0;
+    }
+  }
+
+  Widget calcBtn(String text, Color color) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ElevatedButton(
+          onPressed: () => onButtonClick(text),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(color: Colors.white, fontSize: 24),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Arithmetic Calculator')),
+      appBar: AppBar(title: const Text('Arithmetic Calculator')),
       backgroundColor: const Color.fromARGB(255, 241, 240, 240),
       body: Column(
         children: [
-          SizedBox(height: 20),
-          // Editable expression input
+          const SizedBox(height: 20),
           Container(
-            margin: EdgeInsets.symmetric(horizontal: 16),
-            padding: EdgeInsets.all(16),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(16),
             width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: Colors.black),
               borderRadius: BorderRadius.circular(12),
             ),
-            alignment: Alignment.centerRight,
             child: TextField(
               controller: expressionController,
               textAlign: TextAlign.right,
-              style: TextStyle(
-                  color: const Color.fromARGB(255, 185, 121, 65), fontSize: 32),
-              decoration: InputDecoration(border: InputBorder.none),
+              style: const TextStyle(color: Color.fromARGB(255, 185, 121, 65), fontSize: 32),
+              readOnly: false,
+              decoration: const InputDecoration(border: InputBorder.none),
             ),
           ),
-          if (result.isNotEmpty)
+          if (isResultShown && result.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 20.0, right: 20),
               child: Align(
                 alignment: Alignment.centerRight,
                 child: Text(
                   result,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.greenAccent,
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
@@ -75,7 +206,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                 ),
               ),
             ),
-          Spacer(),
+          const Spacer(),
           Row(
             children: [
               calcBtn('7', Colors.grey),
@@ -109,27 +240,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget calcBtn(String text, Color color) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: ElevatedButton(
-          onPressed: () => onButtonClick(text),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color,
-            padding: EdgeInsets.symmetric(vertical: 20),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-          child: Text(
-            text,
-            style: TextStyle(color: Colors.white, fontSize: 24),
-          ),
-        ),
       ),
     );
   }
