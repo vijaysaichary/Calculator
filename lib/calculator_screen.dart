@@ -8,11 +8,12 @@ class CalculatorPage extends StatefulWidget {
 }
 
 class _CalculatorPageState extends State<CalculatorPage> {
-  String input = '';
-  String expression = '';
-  String result = '';
-  String operator = '';
-  bool isResultShown = false;
+  String input = ''; // Stores user input as text
+  String expression = '';// Current expression
+  String result = ''; // Result after calculation
+  String operator = ''; // Stores the operator 
+  bool isResultShown = false; // to show result after '=' pressed
+
 
   TextEditingController expressionController = TextEditingController();
 
@@ -20,6 +21,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   void initState() {
     super.initState();
     expressionController.text = '';
+    // When the text changes if we already showed the result, calculate again with the new text
     expressionController.addListener(() {
       if (isResultShown) {
         expression = expressionController.text;
@@ -29,10 +31,10 @@ class _CalculatorPageState extends State<CalculatorPage> {
       }
     });
   }
-
+   // Calculate the answer again from the current expression
   void recalculateFromExpression(String expr) {
     try {
-      String exp = expr.replaceAll(' ', '');
+      String exp = expr.replaceAll(' ', '');// Remove spaces
       String op = '';
       for (var o in ['+', '-', '*', '/']) {
         if (exp.contains(o)) {
@@ -40,9 +42,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
           break;
         }
       }
-      if (op.isEmpty) return;
+      if (op.isEmpty) return; // No operator found
       var parts = exp.split(op);
-      if (parts.length < 2) return;
+      if (parts.length < 2) return;// Need two numbers
 
       double num1 = double.tryParse(parts[0]) ?? 0;
       double num2 = double.tryParse(parts[1]) ?? 0;
@@ -58,7 +60,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     }
   }
 
-  /// New helper: insert text at current cursor
+  // Insert given text at current cursor position
   void insertAtCursor(String value) {
     final text = expressionController.text;
     final selection = expressionController.selection;
@@ -72,7 +74,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     );
   }
 
-  void onButtonClick(String value) {
+  void onButtonClick(String value) {// Handle button click 
     setState(() {
       if (value == 'AC') {
         expression = '';
@@ -85,7 +87,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
         String opInExp = '';
         int opIndex = -1;
 
-        for (var o in ['+', '-', '*', '/']) {
+        for (var o in ['+', '-', '*', '/']) {// Check if expression already has an operator
           opIndex = exp.indexOf(o);
           if (opIndex != -1) {
             opInExp = o;
@@ -96,7 +98,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
         if (opInExp.isNotEmpty && opIndex != -1) {
           var parts = exp.split(opInExp);
           if (parts.length == 2) {
-            // Replace operator only if caret is next to operator
+            // If cursor is next to operator, replace it
             final cursorPos = expressionController.selection.start;
             if (cursorPos == opIndex + 1) {
               final beforeOp = parts[0];
@@ -114,11 +116,11 @@ class _CalculatorPageState extends State<CalculatorPage> {
             insertAtCursor(value);
             operator = value;
           }
-        } else {
+        } else {// No existing operator, just insert new operator
           insertAtCursor(value);
           operator = value;
         }
-
+        // Recalculate if result is already shown
         if (isResultShown) {
           recalculateFromExpression(expressionController.text);
         }
@@ -130,7 +132,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       }
     });
   }
-
+  // Actual calculation based on operator
   double calculate(double a, double b, String op) {
     switch (op) {
       case '+':
@@ -145,7 +147,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
         return 0;
     }
   }
-
+  //to build calculator button
   Widget calcBtn(String text, Color color) {
     return Expanded(
       child: Padding(
@@ -174,6 +176,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       body: Column(
         children: [
           const SizedBox(height: 20),
+          // Display input expression
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
@@ -191,7 +194,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
               decoration: const InputDecoration(border: InputBorder.none),
             ),
           ),
-          if (isResultShown && result.isNotEmpty)
+          if (isResultShown && result.isNotEmpty)// Show result below when calculated
             Padding(
               padding: const EdgeInsets.only(top: 20.0, right: 20),
               child: Align(
