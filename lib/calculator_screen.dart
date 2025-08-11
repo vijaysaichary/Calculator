@@ -9,11 +9,10 @@ class CalculatorPage extends StatefulWidget {
 
 class _CalculatorPageState extends State<CalculatorPage> {
   String input = ''; // Stores user input as text
-  String expression = '';// Current expression
+  String expression = ''; // Current expression
   String result = ''; // Result after calculation
-  String operator = ''; // Stores the operator 
+  String operator = ''; // Stores the operator
   bool isResultShown = false; // to show result after '=' pressed
-
 
   TextEditingController expressionController = TextEditingController();
 
@@ -31,10 +30,11 @@ class _CalculatorPageState extends State<CalculatorPage> {
       }
     });
   }
-   // Calculate the answer again from the current expression
+
+  // Calculate the answer again from the current expression
   void recalculateFromExpression(String expr) {
     try {
-      String exp = expr.replaceAll(' ', '');// Remove spaces
+      String exp = expr.replaceAll(' ', ''); // Remove spaces
       String op = '';
       for (var o in ['+', '-', '*', '/']) {
         if (exp.contains(o)) {
@@ -44,7 +44,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       }
       if (op.isEmpty) return; // No operator found
       var parts = exp.split(op);
-      if (parts.length < 2) return;// Need two numbers
+      if (parts.length < 2) return; // Need two numbers
 
       double num1 = double.tryParse(parts[0]) ?? 0;
       double num2 = double.tryParse(parts[1]) ?? 0;
@@ -52,7 +52,12 @@ class _CalculatorPageState extends State<CalculatorPage> {
       double res = calculate(num1, num2, op);
       setState(() {
         operator = op;
-        result = res.toString();
+        // ✅ Format result: no ".0" for integers
+        if (res % 1 == 0) {
+          result = res.toInt().toString();
+        } else {
+          result = res.toString();
+        }
         expression = expr;
       });
     } catch (e) {
@@ -74,7 +79,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
     );
   }
 
-  void onButtonClick(String value) {// Handle button click 
+  void onButtonClick(String value) {
+    // Handle button click
     setState(() {
       if (value == 'AC') {
         expression = '';
@@ -87,7 +93,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
         String opInExp = '';
         int opIndex = -1;
 
-        for (var o in ['+', '-', '*', '/']) {// Check if expression already has an operator
+        for (var o in ['+', '-', '*', '/']) {
+          // Check if expression already has an operator
           opIndex = exp.indexOf(o);
           if (opIndex != -1) {
             opInExp = o;
@@ -105,7 +112,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
               final afterOp = parts[1];
               final newText = beforeOp + value + afterOp;
               expressionController.text = newText;
-              expressionController.selection = TextSelection.collapsed(offset: opIndex + 1);
+              expressionController.selection =
+                  TextSelection.collapsed(offset: opIndex + 1);
               operator = value;
             } else {
               // Else: insert at cursor
@@ -116,7 +124,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
             insertAtCursor(value);
             operator = value;
           }
-        } else {// No existing operator, just insert new operator
+        } else {
+          // No existing operator, just insert new operator
           insertAtCursor(value);
           operator = value;
         }
@@ -132,6 +141,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       }
     });
   }
+
   // Actual calculation based on operator
   double calculate(double a, double b, String op) {
     switch (op) {
@@ -147,7 +157,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
         return 0;
     }
   }
-  //to build calculator button
+
+  // To build calculator button
   Widget calcBtn(String text, Color color) {
     return Expanded(
       child: Padding(
@@ -157,7 +168,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
           style: ElevatedButton.styleFrom(
             backgroundColor: color,
             padding: const EdgeInsets.symmetric(vertical: 20),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           child: Text(
             text,
@@ -173,76 +185,80 @@ class _CalculatorPageState extends State<CalculatorPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Arithmetic Calculator')),
       backgroundColor: const Color.fromARGB(255, 241, 240, 240),
-      body: Column(
-        children: [
-          const SizedBox(height: 20),
-          // Display input expression
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(16),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.black),
-              borderRadius: BorderRadius.circular(12),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            // Display input expression
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(16),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.black),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextField(
+                controller: expressionController,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                    color: Color.fromARGB(255, 185, 121, 65), fontSize: 32),
+                readOnly: false,
+                decoration: const InputDecoration(border: InputBorder.none),
+              ),
             ),
-            child: TextField(
-              controller: expressionController,
-              textAlign: TextAlign.right,
-              style: const TextStyle(color: Color.fromARGB(255, 185, 121, 65), fontSize: 32),
-              readOnly: false,
-              decoration: const InputDecoration(border: InputBorder.none),
-            ),
-          ),
-          if (isResultShown && result.isNotEmpty)// Show result below when calculated
-            Padding(
-              padding: const EdgeInsets.only(top: 20.0, right: 20),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  result,
-                  style: const TextStyle(
-                    color: Colors.greenAccent,
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
+            if (isResultShown && result.isNotEmpty)
+              // Show result below when calculated
+              Padding(
+                padding: const EdgeInsets.only(top: 20.0, right: 20),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    result,
+                    style: const TextStyle(
+                      color: Colors.greenAccent,
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                calcBtn('7', Colors.grey),
+                calcBtn('8', Colors.grey),
+                calcBtn('9', Colors.grey),
+                calcBtn('/', Colors.blue),
+              ],
             ),
-          const Spacer(),
-          Row(
-            children: [
-              calcBtn('7', Colors.grey),
-              calcBtn('8', Colors.grey),
-              calcBtn('9', Colors.grey),
-              calcBtn('/', Colors.blue),
-            ],
-          ),
-          Row(
-            children: [
-              calcBtn('4', Colors.grey),
-              calcBtn('5', Colors.grey),
-              calcBtn('6', Colors.grey),
-              calcBtn('*', Colors.blue),
-            ],
-          ),
-          Row(
-            children: [
-              calcBtn('1', Colors.grey),
-              calcBtn('2', Colors.grey),
-              calcBtn('3', Colors.grey),
-              calcBtn('-', Colors.blue),
-            ],
-          ),
-          Row(
-            children: [
-              calcBtn('AC', Colors.red),
-              calcBtn('0', Colors.grey),
-              calcBtn('=', Colors.orange),
-              calcBtn('+', Colors.blue),
-            ],
-          ),
-        ],
+            Row(
+              children: [
+                calcBtn('4', Colors.grey),
+                calcBtn('5', Colors.grey),
+                calcBtn('6', Colors.grey),
+                calcBtn('*', Colors.blue),
+              ],
+            ),
+            Row(
+              children: [
+                calcBtn('1', Colors.grey),
+                calcBtn('2', Colors.grey),
+                calcBtn('3', Colors.grey),
+                calcBtn('-', Colors.blue),
+              ],
+            ),
+            Row(
+              children: [
+                calcBtn('AC', Colors.red),
+                calcBtn('0', Colors.grey),
+                calcBtn('=', Colors.orange),
+                calcBtn('+', Colors.blue),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
